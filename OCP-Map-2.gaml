@@ -12,10 +12,13 @@ global {
 	list<rgb> pal <- palette([#black, #green, #yellow, #orange, #orange, #red, #red, #red]);
 
 	// Scenarios: 0 = Capacity/Ratios, 1 = Signals & Compliance, 2 = Mixed/Chaos
-	int scenario_type <- 0;
+	int scenario_type <- 0 parameter: "Scenario Type (0: Ratios, 1: Signals, 2: Mixed)" category: "Scenarios" min: 0 max: 2;
+	
+	// Scenario 2 Settings
+	float global_compliance <- 1.0; // 1.0 = 100% compliance
 	
 	// Files
-	file map_osm_file <- osm_file("../includes/map (2).osm");
+	file map_osm_file <- osm_file("../includes/map.osm");
 	geometry shape <- envelope(map_osm_file);
 	graph road_network;
 
@@ -98,7 +101,8 @@ global {
 		}
 
 		// --- TRAFFIC NETWORK ---
-		road_network <- as_edge_graph(road);
+		// We clean the graph to ensure connectivity
+		road_network <- as_edge_graph(road) clean_network(true, 5.0, true, true);
 		
 		// --- INTERSECTIONS & SIGNALS ---
 		// Create traffic lights at nodes with > 2 connections
@@ -115,7 +119,7 @@ global {
 		do spawn_agents;
 		
 		// --- POLICE ---
-		if (scenario_type = 1 and !empty(traffic_light)) {
+		if (scenario_type = 1) {
 			create traffic_police number: 2 {
 				location <- one_of(traffic_light).location;
 			}
@@ -159,8 +163,7 @@ global {
 	}
 
 	reflex pollution_evolution {
-		// Diffuse the pollution values in the field
-		diffuse var: cell on: cell proportion: 0.8;
+		diffuse var: pollution on: cell proportion: 0.8;
 	}
 }
 
@@ -247,7 +250,10 @@ species vehicle skills: [moving] {
 	
 	init {
 		if (scenario_type = 1) {
-			// Scenario 2: Compliance Levels (20%, 40%, 60%)
+			// Scenario 2: Compliance Levels (20%, 40%, 60% mapped to user selection approx)
+			// We assign random compliance based on the global user setting assumption
+			// But per requirement "different levels of rule compliance (20%, 40%, and 60%)"
+			// Let's randomize it per agent
 			compliance_level <- one_of([0.2, 0.4, 0.6, 1.0]); 
 		} else if (scenario_type = 2) {
 			compliance_level <- 0.0; // Mixed/Chaos
@@ -301,6 +307,9 @@ species car parent: vehicle {
 		lane_offset <- 1.5; // Right lane
 	}
 	aspect default { 
+		// Simulating lanes by drawing offset? 
+		// Complex to do vector math in default aspect without rotation matrix, 
+		// simple box rotate is easiest.
 		draw box(2, 4, 2) color: #crimson rotate: heading; 
 	}
 }
@@ -335,7 +344,7 @@ species truck parent: vehicle { // S2 trucks
 
 experiment OCPMap2 type: gui {
 	// Add inputs for scenarios
-	parameter "Scenario (0:Ratio, 1:Signal, 2:Chaos)" category: "Scenarios" var: scenario_type min: 0 max: 2;
+	parameter "Scenario (0:Ratio, 1:Signal, 2:Chaos)" var: scenario_type;
 	
 	output {
 		display "Google Maps 3D" type: 3d background: #lightskyblue axes: false {
@@ -361,7 +370,7 @@ experiment OCPMap2 type: gui {
 			chart "Active Agents" type: series {
 				data "Cars" value: length(car);
 				data "Bikes" value: length(motorbike);
-				data "Pollution" value: mean(cell collect each); // Valid way to get mean of field
+				data "Pollution" value: mean(cell collect each.pollution);
 			}
 		}
 	}

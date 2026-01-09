@@ -1,31 +1,31 @@
 # Continuity Ledger
 
 - Goal (incl. success criteria):
-    - Analyze `OCP-Map-2.gaml` to understand its logic.
-    - Adjust the model based on requirements in `more.txt`.
-    - Maintain the core model while adding/adjusting features.
-    - Adjust simulation outputs (visualizations, charts) to reflect different scenarios.
+    - Analyze `OCP-Map-2.gaml` and integrate requirements from `more.txt`.
+    - Implement Scenarios: 0 (Ratios/Capacity), 1 (Signals/Compliance), 2 (Mixed/Chaos).
+    - Add agents: Traffic Lights, Police, Pedestrians, generic Vehicles (Car, Motorbike, Bus, Truck).
+    - Maintain core map/osm logic.
+    - Visualize traffic flow and pollution.
 - Constraints/Assumptions:
     - Target file: `models/OCP-Map-2.gaml`.
-    - Reference file: `models/more.txt`.
-    - Keep core model logic intact.
+    - `more.txt` requirements are the primary source of truth for new features.
 - Key decisions:
-    - Implemented scenarios as boolean parameters in `global`.
-    - Added species: `bus`, `bus_stop`.
-    - Modified species: `building` (type identification), `car` (school run logic).
-    - Added charts for pollution and speed metrics.
-    - Used defensive coding (fallbacks) for OSM tag detection to ensure robustness.
+    - Refactored agents into a hierarchy: `vehicle` parent species with `car`, `motorbike`, `bus`, `truck` children.
+    - Implemented a global `scenario_type` integer to switch logic dynamically.
+    - Added `traffic_light` agents at complex intersections.
+    - Added `compliance_level` for agents to simulate rule-breaking in relevant scenarios.
 - State:
-    - Completed modification of `OCP-Map-2.gaml` to include requested features.
+    - `OCP-Map-2.gaml` updated and syntax errors fixed.
 - Done:
-    - Analyzed `OCP-Map-2.gaml` and `more.txt`.
-    - Refactored `OCP-Map-2.gaml` to include Bus, School Stagger, and Street Blocking scenarios.
-    - Added charts for monitoring.
+    - Integrated generic vehicle logic.
+    - Implemented Traffic Light cycling and agent compliance logic.
+    - Configured Experiment with scenario parameters and charts.
+    - Fixed facet error in global variable declaration.
 - Now:
-    - Wait for user feedback or further instructions.
+    - Ready for simulation testing.
 - Next:
-    - (Optional) Refine logic based on simulation results (if user runs it).
+    - Address any runtime logic issues if observed (e.g., lane visual offsets, exact pollution formulas).
 - Open questions (UNCONFIRMED if needed):
-    - Did the user want specific time-of-day simulation (currently simplified with steps)?
+    - Precise lane capacity logic is simplified to agent counts for now; detailed geometry-based lanes might be a future step.
 - Working set (files/ids/commands):
     - `models/OCP-Map-2.gaml`

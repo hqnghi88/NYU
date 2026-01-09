@@ -1,17 +1,28 @@
-Research Question
+Environment
+1) Ham Ca Map intersection with traffic lights and traffic police, better parking and crosswalks
+Split all the roads into 2 lanes
 
-How would expanding bus stop density and introducing rental electric scooters/bicycles affect traffic congestion and air pollution levels in Hanoi?
+Agents
+Cars
+Motorbikes
+Buses
+Pediatrician 
+Traffic Police
+Traffic lights
+Parking 
 
-Abstract
-The city of Hanoi is plagued with millions of gas-fueled motorcycles, 
+Behaviour
+Move from point A and B AQAP
 
-Observations
-The first day that observations were made, the group was observing a populated area with a large intersection. It was seen that there were approximately 80% gas-fueled motorcycles, 10% gas-fueled cars, 5% electric powered VinFast cars, and 5% other vehicles such as traditional bicycles and VinFast buses. Additionally, there was a bridge that did not allow trucks which may have contributed to the large number of motorcycles. Narrower roads were also observed, where it seemed to be dominated by gas-fueled motorcycles. Citizens seemed to not care as much, simply walking on the road, even when the light was red. The infrastructure of the city also appears quite old, with small alleyways that only allow motorcycles to fit inside. 
+Interaction b/w agents
+Following rules
+How does pedestrian behaviour changes based on the segregation of lanes
+Vehicle–Signal Interaction
+Vehicle–Pedestrian
+Motorbike–Car
+Vehicle–Traffic Control
 
-
-The second day that observations were made, the group was observing a smaller intersection where it appeared to have tourists. Although it was not rush hour, many motorcycles were still observed, with it being around 70% motorcycles. There were also many motorcycles on the sidewalks, taking up space and having pedestrians have to walk on the street. However, it felt like there were more electric buses despite their larger size compared to motorcycles and cars. In the areas where there were more tourists, there also appeared to be locals attempting to offer services to the tourists, similar to the bike rides with the seats in New York City. 
-
-Report
-Hanoi experiences persistent traffic congestion and increasingly high pollution levels. [Insert Geographical location where we saw this] We realize that the longer vehicles are on the road the more Carbon-Dioxide is being polluted in the air. Which causes health concerns for both tourists and citizens, alike. The percentage of gas-powered vehicles, particularly motorbikes, compared to electric vehicles is 100:20 on every intersection. The amount of buses is only 25%, but with Vinfast Busses that number is shorter to 10%. Although the city operates an extensive bus network, many residents live beyond comfortable walking distance to bus stops, reducing bus usage and increasing reliance on private vehicles. 
-
-At the same time, short distance trips (under 3 km) make up a large share of daily travel in Hanoi, presenting an opportunity for low-emission alternatives such as electric scooters. We realized that tourists and Vietnamese citizens rely on gas-powered vehicles rather than electric vehicles. With electric scooters and bicycles they can be operated in areas that have narrower streets/intersections. These vehicles would be monitored through an application through people’s smartphones, or they can either go to a station that provides the vehicles for easy-access for citizens and tourists alike. On average about 78,000₫ is spent per 2 weeks on fuel, while the bus fare is about 30,000₫ per round trip each day. This raises a valid concern regarding prices, as after 2 days taking the bus becomes more expensive. A solution to this could be a monthly bus pass that is cheaper than 78,000₫.
+Scenarios
+1)Split the road into multiple lanes, allocating lane capacity as fixed percentages based on predefined traffic ratios
+2)Split roads into two dedicated lanes with traffic signals, assuming different levels of rule compliance (20%, 40%, and 60%)
+3)Mixed Traffic Without Lane Discipline 
