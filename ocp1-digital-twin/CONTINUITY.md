@@ -1,0 +1,31 @@
+# Continuity Ledger
+
+- Goal (incl. success criteria):
+    - Analyze `OCP-Map-2.gaml` to understand its logic.
+    - Adjust the model based on requirements in `more.txt`.
+    - Maintain the core model while adding/adjusting features.
+    - Adjust simulation outputs (visualizations, charts) to reflect different scenarios.
+- Constraints/Assumptions:
+    - Target file: `models/OCP-Map-2.gaml`.
+    - Reference file: `models/more.txt`.
+    - Keep core model logic intact.
+- Key decisions:
+    - Implemented scenarios as boolean parameters in `global`.
+    - Added species: `bus`, `bus_stop`.
+    - Modified species: `building` (type identification), `car` (school run logic).
+    - Added charts for pollution and speed metrics.
+    - Used defensive coding (fallbacks) for OSM tag detection to ensure robustness.
+- State:
+    - Completed modification of `OCP-Map-2.gaml` to include requested features.
+- Done:
+    - Analyzed `OCP-Map-2.gaml` and `more.txt`.
+    - Refactored `OCP-Map-2.gaml` to include Bus, School Stagger, and Street Blocking scenarios.
+    - Added charts for monitoring.
+- Now:
+    - Wait for user feedback or further instructions.
+- Next:
+    - (Optional) Refine logic based on simulation results (if user runs it).
+- Open questions (UNCONFIRMED if needed):
+    - Did the user want specific time-of-day simulation (currently simplified with steps)?
+- Working set (files/ids/commands):
+    - `models/OCP-Map-2.gaml`

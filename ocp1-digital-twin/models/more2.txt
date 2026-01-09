@@ -1,0 +1,3 @@
+ from the core gaml model @ocp1-digital-twin/models/OCP-Map-2.gaml , i need to add or adjust some more thing from the @ocp1-digital-twin/models/more.txt , so first analyse OCP-Map-2.gaml to understand all the logic, then adjust, but most important is to keep the  core model  , also adjust to see different of scenarios in term of simulation outputs (visulisations,charts,...)
+ 
+ 
