@@ -1,9 +1,9 @@
 /**
-* Name: OCPMap2
+* Name: Group4
 * Author: ADMIN
 * Tags: osm, map, visualization, 3d, google_maps
 */
-model OCPMap2
+model Group4
 
 global {
 	// --- GLOBAL PARAMETERS ---
@@ -13,6 +13,10 @@ global {
 
 	// Scenarios: 0 = Capacity/Ratios, 1 = Signals & Compliance, 2 = Mixed/Chaos
 	int scenario_type <- 0;
+	float compliance_rate <- 0.5; // Global compliance rate for Scenario 1
+	
+	int total_throughput <- 0;
+	int current_throughput <- 0;
 	
 	// Files
 	file map_osm_file <- osm_file("../includes/map (2).osm");
@@ -40,19 +44,15 @@ global {
 					shape <- myself.shape;
 					type <- string(atts["highway"]);
 					
-					// Define width and capacity based on type
+					// Requirement: Split all roads into 2 lanes (or more)
 					if (type in ["primary", "trunk", "motorway"]) {
 						color <- #orange;
-						width <- 10.0;
-						num_lanes <- 4;
-					} else if (type in ["secondary", "tertiary"]) {
-						color <- #white;
-						width <- 7.0;
-						num_lanes <- 2;
+						width <- 12.0;
+						num_lanes <- 2; 
 					} else {
 						color <- #white;
-						width <- 4.0;
-						num_lanes <- 1;
+						width <- 8.0;
+						num_lanes <- 2;
 					}
 				}
 			}
@@ -124,14 +124,17 @@ global {
 	
 	action spawn_agents {
 		if (!empty(road)) {
-			// Ratios based on Scenario 0 (or default)
-			int nb_cars <- 50;
-			int nb_motorbikes <- 50;
+			int nb_cars <- 60;
+			int nb_motorbikes <- 100;
 			int nb_buses <- 5;
 			
 			if (scenario_type = 0) {
-				// Scenario 1: Split capacities / Fixed ratios
-				nb_cars <- 40;
+				// Scenario 1 in more.txt: Predefined traffic ratios
+				nb_cars <- 30;
+				nb_motorbikes <- 150;
+			} else if (scenario_type = 2) {
+				// Scenario 3 in more.txt: Chaos / Mixed
+				nb_cars <- 80;
 				nb_motorbikes <- 80;
 			}
 			
@@ -145,7 +148,7 @@ global {
 				location <- any_location_in(one_of(road));
 			}
 			create pedestrian number: 50 {
-				location <- any_location_in(one_of(road)); // Simplification: Pedestrians on road graph for now
+				location <- any_location_in(one_of(road)); 
 			}
 		}
 
@@ -159,8 +162,11 @@ global {
 	}
 
 	reflex pollution_evolution {
-		// Diffuse the pollution values in the field
 		diffuse var: cell on: cell proportion: 0.8;
+	}
+	
+	reflex update_throughput when: (cycle mod 100 = 0) {
+		current_throughput <- 0;
 	}
 }
 
@@ -194,24 +200,29 @@ species road {
 	rgb color;
 	float width;
 	int num_lanes <- 1;
-	aspect default { draw shape color: color width: width at: {location.x, location.y, 0.1}; }
+	aspect default { 
+		draw shape color: color width: width at: {location.x, location.y, 0.1}; 
+		// Visual lane splitting - divider line (solid thin line as linetype is not supported)
+		draw shape color: #gray width: 0.2 at: {location.x, location.y, 0.11};
+	}
 }
 
 species traffic_light {
 	bool is_green <- flip(0.5);
-	int counter <- rnd(10, 30);
+	int counter <- rnd(20, 50);
 	
-	reflex cycle when: (scenario_type = 1) { // Only active in Scenario 2 (Signals)
+	reflex cycle when: (scenario_type = 1) { 
 		counter <- counter - 1;
 		if (counter <= 0) {
 			is_green <- !is_green;
-			counter <- rnd(20, 40);
+			counter <- rnd(30, 60);
 		}
 	}
 	
 	aspect default {
 		if (scenario_type = 1) {
 			draw sphere(3) color: (is_green ? #green : #red) at: {location.x, location.y, 5};
+			draw cylinder(0.5, 5) color: #black at: {location.x, location.y, 0};
 		}
 	}
 }
@@ -242,15 +253,13 @@ species vehicle skills: [moving] {
 	point target;
 	float speed;
 	float max_speed;
-	float compliance_level <- 1.0; // Individual compliance
+	float individual_compliance <- 1.0; 
 	float lane_offset <- 0.0;
 	
 	init {
-		if (scenario_type = 1) {
-			// Scenario 2: Compliance Levels (20%, 40%, 60%)
-			compliance_level <- one_of([0.2, 0.4, 0.6, 1.0]); 
-		} else if (scenario_type = 2) {
-			compliance_level <- 0.0; // Mixed/Chaos
+		individual_compliance <- compliance_rate;
+		if (scenario_type = 2) {
+			lane_offset <- rnd(-3.0, 3.0);
 		}
 	}
 
@@ -259,16 +268,15 @@ species vehicle skills: [moving] {
 	}
 
 	action check_traffic_lights {
-		if (scenario_type != 1) { return; } // Only obey in Scenario 2
+		if (scenario_type != 1) { return; } 
 		
 		traffic_light close_light <- traffic_light closest_to self;
 		if (close_light != nil and (location distance_to close_light < 15.0)) {
 			if (!close_light.is_green) {
-				// Check compliance
-				if (flip(compliance_level)) {
-					speed <- 0.0; // Stop
+				if (flip(individual_compliance)) {
+					speed <- 0.0; 
 				} else {
-					// Violation!
+					speed <- max_speed * 0.4; // Violation slow down
 				}
 			} else {
 				speed <- max_speed;
@@ -282,63 +290,81 @@ species vehicle skills: [moving] {
 		do check_traffic_lights();
 		
 		if (speed > 0) {
+			list<vehicle> nearby <- vehicle at_distance 3.0;
+			if (!empty(nearby)) {
+				speed <- speed * 0.8;
+			}
+			
 			path path_followed <- goto(target: target, on: road_network, speed: speed, return_path: true);
 			if (path_followed != nil and path_followed.shape != nil) {
-				cell[path_followed.shape.location] <- cell[path_followed.shape.location] + 5;					
+				cell[path_followed.shape.location] <- cell[path_followed.shape.location] + 2;					
 			}
 		}
 		
 		if (target != nil and location distance_to target < 5.0) {
 			target <- nil;
+			total_throughput <- total_throughput + 1;
+			current_throughput <- current_throughput + 1;
 		}
 	}
 }
 
 species car parent: vehicle {
 	init { 
-		max_speed <- rnd(30.0, 70.0) #km/#h; 
+		max_speed <- rnd(30.0, 50.0) #km/#h; 
 		speed <- max_speed;
-		lane_offset <- 1.5; // Right lane
+		if (scenario_type != 2) { lane_offset <- 2.5; }
 	}
 	aspect default { 
-		draw box(2, 4, 2) color: #crimson rotate: heading; 
+		point pos <- location + {lane_offset * cos(heading - 90), lane_offset * sin(heading - 90), 1.0};
+		draw box(2, 4, 2) color: #crimson rotate: heading at: pos; 
 	}
 }
 
 species motorbike parent: vehicle {
 	init { 
-		max_speed <- rnd(40.0, 80.0) #km/#h; 
+		max_speed <- rnd(40.0, 60.0) #km/#h; 
 		speed <- max_speed;
-		lane_offset <- 0.5;
+		if (scenario_type != 2) { lane_offset <- -2.5; }
 	}
-	aspect default { draw box(1, 2, 1.5) color: #purple rotate: heading; }
+	aspect default { 
+		point pos <- location + {lane_offset * cos(heading - 90), lane_offset * sin(heading - 90), 0.5};
+		draw box(1, 2, 1) color: #purple rotate: heading at: pos; 
+	}
 }
 
 species bus parent: vehicle {
 	init { 
-		max_speed <- rnd(20.0, 50.0) #km/#h; 
+		max_speed <- rnd(20.0, 40.0) #km/#h; 
 		speed <- max_speed;
+		lane_offset <- 0.0;
 	}
-	aspect default { draw box(3, 8, 3) color: #cyan rotate: heading; }
+	aspect default { 
+		point pos <- location + {0, 0, 1.5};
+		draw box(3, 8, 3) color: #cyan rotate: heading at: pos; 
+	}
 }
 
-species truck parent: vehicle { // S2 trucks
+species truck parent: vehicle { 
 	init { 
-		max_speed <- rnd(30.0, 60.0) #km/#h; 
+		max_speed <- rnd(30.0, 50.0) #km/#h; 
 		speed <- max_speed;
 	}
-	aspect default { draw box(3, 6, 3) color: #blue rotate: heading; }
+	aspect default { 
+		point pos <- location + {0, 0, 1.5};
+		draw box(3, 6, 3) color: #blue rotate: heading at: pos; 
+	}
 }
 
 
 // --- EXPERIMENT ---
 
-experiment OCPMap2 type: gui {
-	// Add inputs for scenarios
-	parameter "Scenario (0:Ratio, 1:Signal, 2:Chaos)" category: "Scenarios" var: scenario_type min: 0 max: 2;
+experiment Group4 type: gui {
+	parameter "Scenario (0:Ratio, 1:Signal, 2:Chaos)" var: scenario_type min: 0 max: 2;
+	parameter "Compliance Rate (Scen 1: 0.2, 0.4, 0.6, 0.8)" var: compliance_rate min: 0.0 max: 1.0 step: 0.1;
 	
 	output {
-		display "Google Maps 3D" type: 3d background: #lightskyblue axes: false {
+		display "Traffic Simulation" type: 3d background: #lightskyblue axes: false {
 			species nature refresh:false;
 			species road refresh:false;
 			species tree refresh:false;
@@ -353,15 +379,21 @@ experiment OCPMap2 type: gui {
 			species bus;
 			species truck;
 			
-			mesh cell scale: 9 triangulation: true transparency: 0.4 smooth: 3 above: 0.8 color: pal;
+			mesh cell scale: 5 triangulation: true transparency: 0.5 smooth: 2 above: 0.5 color: pal;
 		}
 		
-		// Optional: Charts for analysis
-		display "Traffic Info" {
-			chart "Active Agents" type: series {
-				data "Cars" value: length(car);
-				data "Bikes" value: length(motorbike);
-				data "Pollution" value: mean(cell collect each); // Valid way to get mean of field
+		display "Throughput Analysis" type: 2d {
+			chart "Throughput over Time" type: series {
+				data "Total Trips" value: total_throughput color: #green;
+				data "Recent Trips (per 100 steps)" value: current_throughput color: #blue;
+			}
+		}
+		
+		display "Agent Distribution" type: 2d {
+			chart "Active Agents" type: pie {
+				data "Cars" value: length(car) color: #crimson;
+				data "Bikes" value: length(motorbike) color: #purple;
+				data "Buses" value: length(bus) color: #cyan;
 			}
 		}
 	}
