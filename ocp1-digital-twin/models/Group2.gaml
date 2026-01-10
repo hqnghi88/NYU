@@ -18,7 +18,7 @@ global {
 	list<rgb> pal <- palette([#black, #green, #yellow, #orange, #orange, #red, #red, #red]);
 
 	// --- 2. FILES ---
-	file map_osm_file <- osm_file("../includes/map.osm");
+	file map_osm_file <- osm_file("../includes/g2.osm");
 	geometry shape <- envelope(map_osm_file);
 	graph road_network;
 
