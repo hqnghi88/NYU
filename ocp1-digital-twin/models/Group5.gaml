@@ -21,7 +21,7 @@ global {
     int total_vehicles -> length(vehicle);
 
 	// 2. FILES
-	file map_osm_file <- osm_file("../includes/map (2).osm");
+	file map_osm_file <- osm_file("../includes/g5.osm");
 	geometry shape <- envelope(map_osm_file);
 	graph road_network;
 

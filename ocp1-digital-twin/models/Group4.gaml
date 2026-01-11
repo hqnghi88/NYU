@@ -19,7 +19,7 @@ global {
 	int current_throughput <- 0;
 	
 	// Files
-	file map_osm_file <- osm_file("../includes/map (2).osm");
+	file map_osm_file <- osm_file("../includes/g4.osm");
 	geometry shape <- envelope(map_osm_file);
 	graph road_network;
 

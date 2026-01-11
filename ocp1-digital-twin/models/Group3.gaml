@@ -26,7 +26,7 @@ global {
 	float total_pollution -> cell sum_of (each.grid_value);
 
 	// --- 3. FILES ---
-	file map_osm_file <- osm_file("../includes/map.osm");
+	file map_osm_file <- osm_file("../includes/g3.osm");
 	geometry shape <- envelope(map_osm_file);
 	graph road_network;
 
