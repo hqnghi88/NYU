@@ -54,6 +54,7 @@ global {
 		create road from: clean_lines {
 			map<string, unknown> atts <- shape.attributes;
 			type <- string(atts["highway"]);
+			oneway <- string(atts["oneway"]);
 
 			// Requirement: Split all roads into 2 lanes (or more)
 			if (type in ["primary", "trunk", "motorway"]) {
@@ -70,6 +71,21 @@ global {
 			nodes <+ last(shape.points);
 		}
 
+		// Remove duplicate nodes to ensure correct graph connectivity
+		nodes <- remove_duplicates(nodes);
+
+		// Create bidirectional roads for those that are not one-way
+		list<road> two_way_roads <- road where (each.oneway != "yes" and each.oneway != "1" and each.oneway != "-1");
+		ask two_way_roads {
+			create road {
+				shape <- polyline(reverse(myself.shape.points));
+				type <- myself.type;
+				color <- myself.color;
+				width <- myself.width;
+				num_lanes <- myself.num_lanes;
+			}
+		}
+
 		create traffic_light from: nodes {
 			time_to_change <- traffic_light_interval;
 		}
@@ -78,6 +94,10 @@ global {
 		road_network <- as_driving_graph(road, traffic_light) with_weights edge_weights;
 		non_deadend_nodes <- traffic_light where !empty(each.roads_out);
 		ask traffic_light {
+			if (length(roads_in) > 2) {
+				is_traffic_signal <- true;
+			}
+
 			do initialize;
 		}
 
@@ -302,7 +322,7 @@ species vehicle parent: base_vehicle {
 	}
 
 	// Move the vehicle to a random node when it reaches a deadend
-	reflex relocate when: next_road = nil and distance_to_current_target = 0.0 {
+	action relocate {
 		do unregister;
 		location <- one_of(non_deadend_nodes).location;
 		total_throughput <- total_throughput + 1;
@@ -310,7 +330,18 @@ species vehicle parent: base_vehicle {
 	}
 
 	reflex commute {
-		do drive_random graph: road_graph;
+		// Check if we are at a dead end or finished a path with no next road
+		if (next_road = nil and distance_to_current_target <= 0.0) {
+			traffic_light current_intersection <- traffic_light closest_to location;
+			if (current_intersection = nil or empty(road_network out_edges_of current_intersection)) {
+				do relocate;
+			} else {
+				do drive_random graph: road_graph;
+			}
+		} else {
+			do drive_random graph: road_graph;
+		}
+
 	}
 
 }

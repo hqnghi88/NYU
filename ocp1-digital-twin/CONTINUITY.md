@@ -15,15 +15,19 @@
     - Added `traffic_light` agents at complex intersections.
     - Added `compliance_level` for agents to simulate rule-breaking in relevant scenarios.
 - State:
-    - `OCP-Map-2.gaml` updated and syntax errors fixed.
-    - `Group4.gaml` vehicle visualization now reflects actual lane assignment.
+    - `Group4.gaml` implements bidirectional roads and robust dead-end handling.
+    - Vehicle visualization and rotation issues fixed.
 - Done:
     - Integrated generic vehicle logic.
     - Implemented Traffic Light cycling and agent compliance logic.
     - Configured Experiment with scenario parameters and charts.
     - Fixed facet error in global variable declaration.
     - Fixed vehicle lane visualization in Group4.gaml to use dynamic driving skill lanes instead of hardcoded offsets.
-    - Fixed vehicle shape orientation (swapped X/Y dimensions) to align with GAMA's default heading.
+    - Fixed vehicle shape orientation to align with GAMA's heading.
+    - Implemented bidirectional road creation based on OSM 'oneway' tag (Fixed 'myself' scope error).
+    - Improved 'relocate' logic to prevent vehicles from getting stuck at dead ends (Fixed 'current_node' error).
+    - Restricted active traffic signals to real intersections (>2 roads).
+    - Fixed graph topology by removing duplicate nodes before creating traffic lights.
 - Now:
     - Ready for simulation testing.
 - Next:
