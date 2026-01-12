@@ -18,6 +18,7 @@ species road skills: [road_skill] {
 	float width;
 	int num_lanes <- 1;
 	string oneway;
+	float maxspeed <- 50.0 #km/#h;
 
 	aspect base {
 		draw shape color: color end_arrow: 1;

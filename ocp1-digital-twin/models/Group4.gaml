@@ -20,6 +20,7 @@ global {
 	float compliance_rate <- 0.5; // Global compliance rate for Scenario 1
 	int total_throughput <- 0;
 	int current_throughput <- 0;
+	int total_lane_changes <- 0;
 
 	// Files
 	file map_osm_file <- osm_file("../includes/g4.osm");
@@ -291,11 +292,33 @@ species pedestrian skills: [moving] {
 }
 
 species vehicle parent: base_vehicle {
+	int last_lane;
 
 	init {
 		road_graph <- road_network;
 		location <- one_of(non_deadend_nodes).location;
-		right_side_driving <- true;
+		last_lane <- lowest_lane;
+		
+		if (scenario_type = 1) {
+			// SCENARIO 1: RULES - PASSIVE
+			safety_distance_coeff <- 2.0;       // Keep safe distance
+			right_side_driving <- true;         // Overtake only on correct side
+			max_speed <- rnd(40.0, 60.0) #km / #h; 
+			// Disable lane changing (stay in lane)
+			lane_change_limit <- 0;
+		} else if (scenario_type = 2) {
+			// SCENARIO 2: CHAOS - HYPER ACTIVE
+			safety_distance_coeff <- 0.1;       // Aggressive tailgating
+			proba_respect_priorities <- 0.0;    // Ignore priorities
+			proba_respect_stops <- [0.0];       // Ignore stops
+			right_side_driving <- false;        // Overtake on any side
+			max_speed <- rnd(80.0, 120.0) #km / #h; 
+			// Allow frequent lane changing
+			lane_change_limit <- 10;
+		} else {
+			// Default
+			right_side_driving <- true;
+		}
 	}
 
 	// Override to use dynamic road width and lane index
@@ -320,7 +343,19 @@ species vehicle parent: base_vehicle {
 			return location;
 		}
 	}
-
+	
+	reflex track_lane_changes {
+		if (lowest_lane != last_lane) {
+			total_lane_changes <- total_lane_changes + 1;
+			last_lane <- lowest_lane;
+		}
+	}
+	
+	reflex aggressive_driving when: scenario_type = 2 and flip(0.1) {
+		// Erratic speed changes will force lane changes (overtaking)
+		speed <- max_speed * rnd(0.8, 1.5);
+	}
+	
 	// Move the vehicle to a random node when it reaches a deadend
 	action relocate {
 		do unregister;
@@ -330,11 +365,24 @@ species vehicle parent: base_vehicle {
 	}
 
 	reflex commute {
+		// Speed Regulation
+		if (current_road != nil and scenario_type = 1) {
+			// Rules: Obey Road Limit
+			speed <- min(max_speed, road(current_road).maxspeed);
+		}
+		
 		// Check if we are at a dead end or finished a path with no next road
-		if (next_road = nil and distance_to_current_target <= 0.0) {
-			traffic_light current_intersection <- traffic_light closest_to location;
-			if (current_intersection = nil or empty(road_network out_edges_of current_intersection)) {
-				do relocate;
+		if (distance_to_current_target <= 0.0) {
+			total_throughput <- total_throughput + 1;
+			current_throughput <- current_throughput + 1;
+			
+			if (next_road = nil) {
+				traffic_light current_intersection <- traffic_light closest_to location;
+				if (current_intersection = nil or empty(road_network out_edges_of current_intersection)) {
+					do relocate;
+				} else {
+					do drive_random graph: road_graph;
+				}
 			} else {
 				do drive_random graph: road_graph;
 			}
@@ -442,6 +490,12 @@ experiment Group4 type: gui {
 				data "Buses" value: length(bus) color: #cyan;
 			}
 
+		}
+
+		display "Behavior Analysis" type: 2d {
+			chart "Lane Instability (Total Changes)" type: series {
+				data "Lane Changes" value: total_lane_changes color: #orange;
+			}
 		}
 
 	}

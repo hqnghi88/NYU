@@ -28,6 +28,14 @@
     - Improved 'relocate' logic to prevent vehicles from getting stuck at dead ends (Fixed 'current_node' error).
     - Restricted active traffic signals to real intersections (>2 roads).
     - Fixed graph topology by removing duplicate nodes before creating traffic lights.
+    - Fixed throughput chart logic to count every completed road segment.
+    - Implemented distinct driving behaviors for "Rules" (safe) vs "Chaos" (aggressive) scenarios.
+    - Added "Lane Instability" chart to visualize the difference in lane-changing behavior.
+    - Resolved "change_lane" action error and "proba_lane_change_up" variable error by using 'lane_change_limit' and erratic speed fluctuations to induce chaos naturally.
+    - Refined Scenario Differentiation:
+        - Added 'maxspeed' (50 km/h) to roads.
+        - Scenario 1 (Rules): Vehicles obey road speed limits, use high safety distance, only overtake on the left, AND have 'lane_change_limit' set to 0 (passive).
+        - Scenario 2 (Chaos): Vehicles speed (80-120 km/h), ignore limits, tailgate, overtake on any side, AND have 'lane_change_limit' set to 10 (hyper-active).
 - Now:
     - Ready for simulation testing.
 - Next:
