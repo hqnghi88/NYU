@@ -278,29 +278,6 @@ species vehicle parent: base_vehicle {
 		right_side_driving <- true;
 	}
 
-	// Override to use dynamic road width and lane index
-	point compute_position {
-		if (current_road != nil) {
-			float road_width <- road(current_road).width;
-			int n_lanes <- road(current_road).num_lanes;
-			// Calculate shift from center. 
-			// Lane 0 is rightmost. Vector (heading + 90) points Left.
-			// We want Lane 0 to shift Right (negative multiplier).
-			
-			float lane_w <- road_width / n_lanes;
-			float dist_from_left_edge <- (n_lanes - lowest_lane - 0.5) * lane_w;
-			float center_offset <- dist_from_left_edge - (road_width / 2);
-			
-			// Invert sign because +90 deg is Left
-			float final_dist <- -center_offset;
-
-			point shift_pt <- {cos(heading + 90) * final_dist, sin(heading + 90) * final_dist};
-			return location + shift_pt;
-		} else {
-			return location;
-		}
-	}
-
 	// Move the vehicle to a random node when it reaches a deadend
 	reflex relocate when: next_road = nil and distance_to_current_target = 0.0 {
 		do unregister;
@@ -320,13 +297,15 @@ species car parent: vehicle {
 	init {
 		max_speed <- rnd(30.0, 50.0) #km / #h;
 		speed <- max_speed;
+		if (scenario_type != 2) {
+			lane_offset <- 2.5;
+		}
+
 	}
 
 	aspect default {
-		point pos <- compute_position();
-		// Adjust Z height
-		pos <- {pos.x, pos.y, 1.0};
-		draw box(4, 2, 2) color: #crimson rotate: heading at: pos;
+		point pos <- location + {lane_offset * cos(heading - 90), lane_offset * sin(heading - 90), 1.0};
+		draw box(2, 4, 2) color: #crimson rotate: heading at: pos;
 	}
 
 }
@@ -336,12 +315,15 @@ species motorbike parent: vehicle {
 	init {
 		max_speed <- rnd(40.0, 60.0) #km / #h;
 		speed <- max_speed;
+		if (scenario_type != 2) {
+			lane_offset <- -2.5;
+		}
+
 	}
 
 	aspect default {
-		point pos <- compute_position();
-		pos <- {pos.x, pos.y, 0.5};
-		draw box(2, 1, 1) color: #purple rotate: heading at: pos;
+		point pos <- location + {lane_offset * cos(heading - 90), lane_offset * sin(heading - 90), 0.5};
+		draw box(1, 2, 1) color: #purple rotate: heading at: pos;
 	}
 
 }
@@ -351,12 +333,12 @@ species bus parent: vehicle {
 	init {
 		max_speed <- rnd(20.0, 40.0) #km / #h;
 		speed <- max_speed;
+		lane_offset <- 0.0;
 	}
 
 	aspect default {
-		point pos <- compute_position();
-		pos <- {pos.x, pos.y, 1.5};
-		draw box(8, 3, 3) color: #cyan rotate: heading at: pos;
+		point pos <- location + {0, 0, 1.5};
+		draw box(3, 8, 3) color: #cyan rotate: heading at: pos;
 	}
 
 }
@@ -369,9 +351,8 @@ species truck parent: vehicle {
 	}
 
 	aspect default {
-		point pos <- compute_position();
-		pos <- {pos.x, pos.y, 1.5};
-		draw box(6, 3, 3) color: #blue rotate: heading at: pos;
+		point pos <- location + {0, 0, 1.5};
+		draw box(3, 6, 3) color: #blue rotate: heading at: pos;
 	}
 
 }

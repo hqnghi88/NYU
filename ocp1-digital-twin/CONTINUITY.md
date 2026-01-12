@@ -16,11 +16,14 @@
     - Added `compliance_level` for agents to simulate rule-breaking in relevant scenarios.
 - State:
     - `OCP-Map-2.gaml` updated and syntax errors fixed.
+    - `Group4.gaml` vehicle visualization now reflects actual lane assignment.
 - Done:
     - Integrated generic vehicle logic.
     - Implemented Traffic Light cycling and agent compliance logic.
     - Configured Experiment with scenario parameters and charts.
     - Fixed facet error in global variable declaration.
+    - Fixed vehicle lane visualization in Group4.gaml to use dynamic driving skill lanes instead of hardcoded offsets.
+    - Fixed vehicle shape orientation (swapped X/Y dimensions) to align with GAMA's default heading.
 - Now:
     - Ready for simulation testing.
 - Next:

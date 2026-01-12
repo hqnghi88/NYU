@@ -24,7 +24,7 @@ global {
 	int num_motorbikes;
 
 	graph road_network;
-	list<intersection> non_deadend_nodes;
+	list<traffic_light> non_deadend_nodes;
 
 	init {
 		create road from: shp_roads {
@@ -39,18 +39,18 @@ global {
 			}
 		}
 		
-		create intersection from: shp_nodes
+		create traffic_light from: shp_nodes
 				with: [is_traffic_signal::(read("type") = "traffic_signals")] {
 			time_to_change <- traffic_light_interval;
 		}
 		
 		// Create a graph representing the road network, with road lengths as weights
 		map edge_weights <- road as_map (each::each.shape.perimeter);
-		road_network <- as_driving_graph(road, intersection) with_weights edge_weights;
+		road_network <- as_driving_graph(road, traffic_light) with_weights edge_weights;
 		
-		non_deadend_nodes <- intersection where !empty(each.roads_out);
+		non_deadend_nodes <- traffic_light where !empty(each.roads_out);
 		// Initialize the traffic lights
-		ask intersection {
+		ask traffic_light {
 			do initialize;
 		}
 		
@@ -124,7 +124,7 @@ experiment city type: gui {
 			species road aspect: base;
 			species car_random aspect: base;
 			species motorbike_random aspect: base;
-			species intersection aspect: base;
+			species traffic_light aspect: base;
 		}
 	}
 }

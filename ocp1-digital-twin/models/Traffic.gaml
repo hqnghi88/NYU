@@ -4,28 +4,31 @@
 * Author: Patrick Taillandier & Duc Pham
 * Tags: driving skill, graph, agent_movement, skill, transport
 */
-
 model traffic
 
 global {
-	// This is for visualization purposes only, 
-	// the width of a vehicle is specified using num_lanes_occupied
-	float lane_width <- 0.7;  
+// This is for visualization purposes only, 
+// the width of a vehicle is specified using num_lanes_occupied
+	float lane_width <- 0.7;
 }
 
 species road skills: [road_skill] {
 	rgb color <- #white;
+	string type;
+	float width;
+	int num_lanes <- 1;
 	string oneway;
 
 	aspect base {
 		draw shape color: color end_arrow: 1;
 	}
+
 }
 
-species intersection skills: [intersection_skill] {
+species traffic_light skills: [intersection_skill] {
 	rgb color;
 	bool is_traffic_signal;
-	float time_to_change <- 30#s;
+	float time_to_change <- 30 #s;
 	float counter <- rnd(time_to_change);
 	list<road> ways1;
 	list<road> ways2;
@@ -41,7 +44,9 @@ species intersection skills: [intersection_skill] {
 			} else {
 				do to_red;
 			}
+
 		}
+
 	}
 
 	action compute_crossing {
@@ -56,14 +61,18 @@ species intersection skills: [intersection_skill] {
 				if (ang > 45 and ang < 135) or (ang > 225 and ang < 315) {
 					ways2 << road(rd);
 				}
+
 			}
+
 		}
 
 		loop rd over: roads_in {
 			if not (rd in ways2) {
 				ways1 << road(rd);
 			}
+
 		}
+
 	}
 
 	action to_green {
@@ -87,47 +96,52 @@ species intersection skills: [intersection_skill] {
 			} else {
 				do to_green;
 			}
+
 		}
+
 	}
 
 	aspect base {
+		draw sphere(3) color: (is_green ? #green : #red) at: {location.x, location.y, 5};
+		draw cylinder(0.5, 5) color: #black at: {location.x, location.y, 0};
 		if (is_traffic_signal) {
 			draw circle(1) color: color_fire;
 		} else {
 			draw circle(1) color: color;
 		}
+
 	}
+
 }
 
 species base_vehicle skills: [driving] {
 	rgb color <- rnd_color(255);
+	float lane_offset <- 0.0;
 	graph road_graph;
-	
 	point compute_position {
-		// Shifts the position of the vehicle perpendicularly to the road,
-		// in order to visualize different lanes
+	// Shifts the position of the vehicle perpendicularly to the road,
+	// in order to visualize different lanes
 		if (current_road != nil) {
-			float dist <- (road(current_road).num_lanes - lowest_lane -
-				mean(range(num_lanes_occupied - 1)) - 0.5) * lane_width;
+			float dist <- (road(current_road).num_lanes - lowest_lane - mean(range(num_lanes_occupied - 1)) - 0.5) * lane_width;
 			if violating_oneway {
 				dist <- -dist;
 			}
-		 	point shift_pt <- {cos(heading + 90) * dist, sin(heading + 90) * dist};	
-		
+
+			point shift_pt <- {cos(heading + 90) * dist, sin(heading + 90) * dist};
 			return location + shift_pt;
 		} else {
 			return {0, 0};
 		}
+
 	}
-	
+
 	aspect base {
 		if (current_road != nil) {
 			point pos <- compute_position();
-				
-			draw rectangle(vehicle_length, lane_width * num_lanes_occupied) 
-				at: pos color: color rotate: heading border: #black;
-			draw triangle(lane_width * num_lanes_occupied) 
-				at: pos color: #white rotate: heading + 90 border: #black;
+			draw rectangle(vehicle_length, lane_width * num_lanes_occupied) at: pos color: color rotate: heading border: #black;
+			draw triangle(lane_width * num_lanes_occupied) at: pos color: #white rotate: heading + 90 border: #black;
 		}
+
 	}
+
 }
