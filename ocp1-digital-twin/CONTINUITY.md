@@ -6,6 +6,7 @@
     - Add agents: Traffic Lights, Police, Pedestrians, generic Vehicles (Car, Motorbike, Bus, Truck).
     - Maintain core map/osm logic.
     - Visualize traffic flow and pollution.
+    - **New Goal**: Develop `khspread/los_heatmap.gaml` to visualize Level of Service (LOS) spread across Khanh Hoa province with smooth gradients and 3D terrain.
 - Constraints/Assumptions:
     - Target file: `models/OCP-Map-2.gaml`.
     - `more.txt` requirements are the primary source of truth for new features.
@@ -14,6 +15,10 @@
     - Implemented a global `scenario_type` integer to switch logic dynamically.
     - Added `traffic_light` agents at complex intersections.
     - Added `compliance_level` for agents to simulate rule-breaking in relevant scenarios.
+    - **Heatmap Strategy**:
+        - Used `grid` species for core logic but synced to `field` for optimized 3D mesh visualization.
+        - Implemented **stochastic one-directional battle** mechanics where high-value (Green) cells actively conquer lower-value (Red) neighbors to simulate service improvement.
+        - Used **dynamic z-scaling** and transparency for an aesthetic "cloud-like" 3D terrain.
 - State:
     - `Group4.gaml` implements bidirectional roads and robust dead-end handling.
     - Vehicle visualization and rotation issues fixed.
@@ -36,11 +41,22 @@
         - Added 'maxspeed' (50 km/h) to roads.
         - Scenario 1 (Rules): Vehicles obey road speed limits, use high safety distance, only overtake on the left, AND have 'lane_change_limit' set to 0 (passive).
         - Scenario 2 (Chaos): Vehicles speed (80-120 km/h), ignore limits, tailgate, overtake on any side, AND have 'lane_change_limit' set to 10 (hyper-active).
+        - Scenario 2 (Chaos): Vehicles speed (80-120 km/h), ignore limits, tailgate, overtake on any side, AND have 'lane_change_limit' set to 10 (hyper-active).
+    - **LOS Heatmap Completed**:
+        - Implemented smooth color blending using custom interpolation logic on a 200x200 grid.
+        - Added stochastic battle mechanics: Green cells expand aggressively, conquering Red cells with high probability, while Red cells provide minimal resistance.
+        - Implemented **3D Mesh Visualization**:
+            - Solved "black screen" issue by using `palette` instead of `scale` in mesh command.
+            - Implemented data synchronization reflex to update `los_field` from `heatmap_cell` grid every step.
+            - Calibrated `z_scaling` to 1.5% of map width for a gentle, cloud-like appearance with transparency.
 - Now:
-    - Ready for simulation testing.
+    - **LOS Heatmap**: Fully functional and optimized. Ready for demonstration.
+    - Traffic Model: Ready for simulation testing.
 - Next:
     - Address any runtime logic issues if observed (e.g., lane visual offsets, exact pollution formulas).
 - Open questions (UNCONFIRMED if needed):
     - Precise lane capacity logic is simplified to agent counts for now; detailed geometry-based lanes might be a future step.
 - Working set (files/ids/commands):
+- Working set (files/ids/commands):
     - `models/OCP-Map-2.gaml`
+    - `khspread/los_heatmap.gaml`
