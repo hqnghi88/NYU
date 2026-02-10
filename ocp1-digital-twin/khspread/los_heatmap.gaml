@@ -27,7 +27,7 @@ global {
 	float z_scaling <- 0.1;
 	
 	// FIELD for Mesh Visualization (Waterflow style)
-	field los_field <- field(400, 400);
+	field los_field <- field(200, 200);
 
 	init {
 		write "Step 1: Loading Boundaries...";
@@ -64,8 +64,8 @@ global {
 			}
 		}
 		
-		// Auto-calculate 3D height scale: Target peak = 5% of map width (Gentle hills)
-		z_scaling <- (shape.width * 0.05) / 6.0;
+		// Auto-calculate 3D height scale: 1.5% of width for "cloud" look
+		z_scaling <- (shape.width * 0.015) / 6.0;
 		
 		// INITIAL SYNC: Make sure field has data before first frame!
 		// INITIAL SYNC: Make sure field has data before first frame!
@@ -117,7 +117,7 @@ global {
 }
 
 // Fixed Grid for performance and reliability
-grid heatmap_cell width: 400 height: 400 {
+grid heatmap_cell width: 200 height: 200 {
 	float cell_value <- 0.0;
 	float seed_value <- 0.0;
 	bool is_province <- false;
@@ -204,13 +204,23 @@ experiment LOSHeatmap type: gui {
 		}
 		
 		// 3D Terrain View — MESH Optimized (like Waterflow example)
-		display "LOS 3D Terrain" type: opengl background: rgb(30, 30, 40) {
-			// Mesh draws the FIELD directly (fast & smooth)
-			// 'palette' distributes colors from Min to Max value of the field
-			mesh los_field scale: z_scaling triangulation: true smooth: true
+		display "LOS 3D Terrain" type: opengl background: #white {
+			// Mesh draws the FIELD directly (fast & smooth) WITH Transparency for "cloud" look
+			mesh los_field scale: z_scaling triangulation: true smooth: true transparency: 0.3
 				color: palette([#white, #red, #orangered, #orange, #yellow, #lawngreen, #green])
 				no_data: -1.0; // Draw everything, even 0.0 values
 			
+			overlay position: {0, 0} size: {220 #px, 320 #px} background: #white border: #black {
+				draw "LOS Surface Map" at: {20 #px, 30 #px} color: #black font: font("Arial", 12, #bold);
+				int y_offset <- 60;
+				loop l over: ["A", "B", "C", "D", "E", "F"] {
+					draw square(15 #px) at: {30 #px, (y_offset) #px} color: los_colors[l];
+					draw "LOS " + l at: {55 #px, (y_offset + 12) #px} color: #black font: font("Arial", 11, #plain);
+					y_offset <- y_offset + 30;
+				}
+				float max_v <- max(heatmap_cell collect each.cell_value);
+				draw "Intensity: " + string(int(max_v * 10) / 10.0) at: {30 #px, (y_offset + 10) #px} color: (max_v > 0.5 ? #darkgreen : #red);
+			}
 			// Floating borders
 //			graphics "Floating Borders" {
 //				float float_h <- 6.0 * (z_scaling * 5) * 1.05;
