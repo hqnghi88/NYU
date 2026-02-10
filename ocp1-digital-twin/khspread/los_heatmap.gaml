@@ -62,38 +62,35 @@ global {
 		write "Step 4: Heatmap Ready. Blending is now bounded to province.";
 	}
 	
-	// WEIGHTED BLENDING + ACTIVE RADIATION
-	// Green actively pushes outward, Red stays passive
-	reflex maintain_vibrancy {
-		// 1. ACTIVE RADIATION: High-value sources push their color to nearby cells
-		// Green pushes strongly, Orange moderately, Red barely
-		ask heatmap_cell where (each.is_province and each.cell_value > 2.0) {
-			// Higher values push harder: Green pushes to neighbors aggressively
+	// ONE-DIRECTIONAL BATTLE: Only higher values attack lower
+	// Red can NEVER attack Green. Green ALWAYS expands.
+	reflex color_battle {
+		// 1. EXPANSION: Each cell pushes its color to ALL weaker neighbors
+		// Higher values push more aggressively
+		ask heatmap_cell where (each.is_province and each.cell_value > 1.5) {
 			float my_val <- cell_value;
-			list<heatmap_cell> weak_ns <- self.neighbors where (each.is_province and each.cell_value < my_val);
-			ask weak_ns {
-				// Push strength proportional to the source value
-				float push <- my_val * 0.15;
-				cell_value <- max([cell_value, cell_value * 0.5 + push]);
-				// Cap at 6.0
-				cell_value <- min([6.0, cell_value]);
+			// Push strength: Green pushes hard, Orange moderate
+			float push_strength <- (my_val / 6.0) * 0.5;  // Green=0.5, Red=0.08
+			ask self.neighbors where (each.is_province and each.cell_value < my_val) {
+				// Stochastic: random chance to convert (higher values = higher chance)
+				if (flip(push_strength)) {
+					// Convert! Pull strongly toward attacker's value
+					cell_value <- cell_value * 0.3 + my_val * 0.7;
+				}
 			}
 		}
 		
-		// 2. Weighted Blend for remaining empty cells
-		ask heatmap_cell where (each.is_province and each.seed_value = 0.0 and each.cell_value < 0.1) {
-			list<heatmap_cell> colored_ns <- self.neighbors where (each.is_province and each.cell_value > 0.1);
-			if (!empty(colored_ns)) {
-				float total_weight <- sum(colored_ns collect (each.cell_value * each.cell_value));
-				float weighted_sum <- sum(colored_ns collect (each.cell_value * each.cell_value * each.cell_value));
-				float weighted_avg <- weighted_sum / total_weight;
-				cell_value <- weighted_avg * 0.5;
-			}
-		}
-		
-		// 3. Lock: Source cells always keep their original value
+		// 2. Source anchoring: Green anchors hard, Red barely
 		ask heatmap_cell where (each.seed_value > 0) {
-			cell_value <- seed_value;
+			float anchor <- (seed_value / 6.0);
+			anchor <- anchor * anchor * anchor;  // Red=0.005, Green=1.0
+			float pull <- 0.05 + anchor * 0.9;   // Red=0.05, Green=0.95
+			cell_value <- cell_value * (1.0 - pull) + seed_value * pull;
+		}
+		
+		// 3. Floor: keep everything visible
+		ask heatmap_cell where (each.is_province and each.cell_value < 0.5) {
+			cell_value <- 0.5;
 		}
 	}
 }
