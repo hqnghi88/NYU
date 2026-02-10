@@ -24,6 +24,10 @@ global {
 
 	geometry province_boundary;
 	geometry mask_shape;
+	float z_scaling <- 0.1;
+	
+	// FIELD for Mesh Visualization (Waterflow style)
+	field los_field <- field(400, 400);
 
 	init {
 		write "Step 1: Loading Boundaries...";
@@ -59,7 +63,24 @@ global {
 				}
 			}
 		}
-		write "Step 4: Heatmap Ready. Blending is now bounded to province.";
+		
+		// Auto-calculate 3D height scale: Target peak = 5% of map width (Gentle hills)
+		z_scaling <- (shape.width * 0.05) / 6.0;
+		
+		// INITIAL SYNC: Make sure field has data before first frame!
+		// INITIAL SYNC: Make sure field has data before first frame!
+		ask heatmap_cell {
+			los_field[grid_x, grid_y] <- cell_value;
+		}
+		
+		write "Step 4: Heatmap and 3D Terrain Ready.";
+	}
+	
+	// SYNC REFLEX: Update field from grid for 3D mesh
+	reflex update_field {
+		ask heatmap_cell {
+			los_field[grid_x, grid_y] <- cell_value;
+		}
 	}
 	
 	// ONE-DIRECTIONAL BATTLE: Only higher values attack lower
@@ -96,7 +117,7 @@ global {
 }
 
 // Fixed Grid for performance and reliability
-grid heatmap_cell width: 200 height: 200 {
+grid heatmap_cell width: 400 height: 400 {
 	float cell_value <- 0.0;
 	float seed_value <- 0.0;
 	bool is_province <- false;
@@ -138,6 +159,16 @@ grid heatmap_cell width: 200 height: 200 {
 	reflex update_my_color {
 		do compute_color;
 	}
+	
+	aspect default {
+		draw shape color: color;
+	}
+	
+	aspect threeD {
+		if (cell_value > 0.1) {
+			draw box(shape.width, shape.height, cell_value * z_scaling) color: color;
+		}
+	}
 }
 
 species commune {
@@ -152,19 +183,13 @@ species commune {
 
 experiment LOSHeatmap type: gui {
 	output {
+		// 2D View
 		display "LOS Heatmap" type: 2d background: #white {
-			// 1. Reliable Grid Display
 			grid heatmap_cell border: #transparent;
-			
-			// 2. Reference Outlines
 			species commune;
-			
-			// 3. Mask for professional results
 			graphics "Ocean Mask" {
 				draw mask_shape color: #white;
 			}
-			
-			// 4. Detailed Status Legend
 			overlay position: {0, 0} size: {220 #px, 320 #px} background: #white border: #black {
 				draw "LOS Surface Map" at: {20 #px, 30 #px} color: #black font: font("Arial", 12, #bold);
 				int y_offset <- 60;
@@ -175,8 +200,24 @@ experiment LOSHeatmap type: gui {
 				}
 				float max_v <- max(heatmap_cell collect each.cell_value);
 				draw "Intensity: " + string(int(max_v * 10) / 10.0) at: {30 #px, (y_offset + 10) #px} color: (max_v > 0.5 ? #darkgreen : #red);
-				draw "Status: " + (cycle < 100 ? "Blending..." : "Stable") at: {30 #px, (y_offset + 30) #px} color: #blue font: font("Arial", 9, #italic);
 			}
+		}
+		
+		// 3D Terrain View — MESH Optimized (like Waterflow example)
+		display "LOS 3D Terrain" type: opengl background: rgb(30, 30, 40) {
+			// Mesh draws the FIELD directly (fast & smooth)
+			// 'palette' distributes colors from Min to Max value of the field
+			mesh los_field scale: z_scaling triangulation: true smooth: true
+				color: palette([#white, #red, #orangered, #orange, #yellow, #lawngreen, #green])
+				no_data: -1.0; // Draw everything, even 0.0 values
+			
+			// Floating borders
+//			graphics "Floating Borders" {
+//				float float_h <- 6.0 * (z_scaling * 5) * 1.05;
+//				loop c over: commune {
+//					draw c.shape color: #transparent border: #white width: 2.0 at: {0, 0, float_h};
+//				}
+//			}
 		}
 	}
 }
